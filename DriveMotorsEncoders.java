@@ -28,7 +28,7 @@ import org.firstinspires.ftc.teamcode.PIDController;
 public class DriveMotors {
 
 	enum states {
-		ODOMETRY,
+		ENCODERS,
 		DISTANCE,
 		POWER,
 		IDLE
@@ -80,73 +80,15 @@ public class DriveMotors {
 		this.frontRight.setTargetPosition(0);
 		this.backRight.setTargetPosition(0);
 	
-		//this.distSensor = auto.hardwareMap.get(DistanceSensor.class, BotConfig.DISTANCE_SENSOR_NAME);
-
-		this.odometry = auto.hardwareMap.get(GoBildaPinpointDriver.class, "odo");
-
 		ResetEncoders();
 		SetZeroBehaviour();
 	}
 
 
-	public void InitializeOdometry() {
-		/*
-		Set the odometry pod positions relative to the point that the odometry computer tracks around.
-		The X pod offset refers to how far sideways from the tracking point the
-		X (forward) odometry pod is. Left of the center is a positive number,
-		right of center is a negative number. the Y pod offset refers to how far forwards from
-		the tracking point the Y (strafe) odometry pod is. forward of center is a positive number,
-		backwards is a negative number.
-		 */
-		this.odometry.setOffsets(145, -70); 
-
-		/*
-		Set the kind of pods used by your robot. If you're using goBILDA odometry pods, select either
-		the goBILDA_SWINGARM_POD, or the goBILDA_4_BAR_POD.
-		If you're using another kind of odometry pod, uncomment setEncoderResolution and input the
-		number of ticks per mm of your odometry pod.
-		 */
-		this.odometry.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-		//odo.setEncoderResolution(13.26291192);
-
-
-		/*
-		Set the direction that each of the two odometry pods count. The X (forward) pod should
-		increase when you move the robot forward. And the Y (strafe) pod should increase when
-		you move the robot to the left.
-		 */
-		this.odometry.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.FORWARD);
-
-
-		/*
-		Before running the robot, recalibrate the IMU. This needs to happen when the robot is stationary
-		The IMU will automatically calibrate when first powered on, but recalibrating before running
-		the robot is a good idea to ensure that the calibration is "good".
-		resetPosAndIMU will reset the position to 0,0,0 and also recalibrate the IMU.
-		This is recommended before you run your autonomous, as a bad initial calibration can cause
-		an incorrect starting value for x, y, and heading.
-		 */
-		//odo.recalibrateIMU();
-		this.odometry.resetPosAndIMU();
-		this.odometry.setPosition( new Pose2D(DistanceUnit.MM, 0, -20, AngleUnit.RADIANS, 0) );
-	}
-
-
 	public double process() {
 		double deltaTime = deltaTimer.seconds();
-		
-		// Get the heading of the bot (the angle it is facing) in radians
-		double newHeading = odometry.getHeading();
-		if (!Double.isNaN(newHeading)) {
-			this.heading = newHeading;
-		}
 
 		switch (this.state) {
-			case ODOMETRY:
-				SetToRunWithVelocity();
-				driveWithOdometry(deltaTime);
-				break;
-			
 			case DISTANCE:
 				SetToRunWithPower();
 				driveWithDistanceSensor(deltaTime);
@@ -170,56 +112,41 @@ public class DriveMotors {
 	}
 
 
-	private void driveWithOdometry(double delta) {
+	public void MoveWithEncoders(int backLeftPos, int frontLeftPos, int frontRightPos, int backRightPos) {
+		backLeft.setTargetPosition(backLeft.getTargetPosition() + backLeftPos);
+		frontLeft.setTargetPosition(frontLeft.getTargetPosition() + frontLeftPos);
+		frontRight.setTargetPosition(frontRight.getTargetPosition() + frontRightPos);
+		backRight.setTargetPosition(backRight.getTargetPosition() + backRightPos);
+	}
 
-		// Get robot movement errors
-		double xError = targetX - odometry.getPosX();
-		double yError = targetY - odometry.getPosY();
 
-		// Rotate the movement vector to convert field relative direction to robot relative direction
-		double forwardError =
-			xError * Math.cos(-heading) -
-			yError * Math.sin(-heading);
-		double horizontalError =
-			xError * Math.sin(-heading) +
-			yError * Math.cos(-heading);
-
-		// Get powers from PID
-		double forwardPower = forwardPidController.PIDControl(forwardError, delta);
-		double horizontalPower = strafePidController.PIDControl(horizontalError, delta);
-		double anglePower = imuPidController.PIDControlRadians(targetHeading, heading, delta);
-
-		// Set the power of the wheels based off the new movement vector
-		double backLeftPower   = (-forwardPower - horizontalPower + anglePower);
-		double frontLeftPower  = (-forwardPower + horizontalPower + anglePower);
-		double frontRightPower = ( forwardPower + horizontalPower + anglePower);
-		double backRightPower  = ( forwardPower - horizontalPower + anglePower);
-
-		// Find highest motor power value
-		double highestPower = Collections.max(Arrays.asList( Math.abs(backLeftPower), Math.abs(frontLeftPower), Math.abs(frontRightPower), Math.abs(backRightPower) ));
-		auto.telemetry.addData("", highestPower);
-		// Scale power values if trying to run motors faster than possible
-		// if (highestPower > 1) {
-		// 	backLeftPower /= highestPower;
-		// 	frontLeftPower /= highestPower;
-		// 	frontRightPower /= highestPower;
-		// 	backRightPower /= highestPower;
-		// }
-
-		backLeft.setPower(backLeftPower);
-		frontLeft.setPower(frontLeftPower);
-		frontRight.setPower(frontRightPower);
-		backRight.setPower(backRightPower);
-		
-		auto.telemetry.addData("drivemotors heading", heading);
-		
-		auto.telemetry.addData("drivemotors xError", xError);
-		auto.telemetry.addData("drivemotors yError", yError);
-		auto.telemetry.addData("drivemotors angleError", targetHeading - heading);
-		
-		auto.telemetry.addData("drivemotors forwardPower", forwardPower);
-		auto.telemetry.addData("drivemotors horizontalPower", horizontalPower);
-		auto.telemetry.addData("drivemotors anglePower", anglePower);
+	public void MoveWithEncoders(Direction dir, double distance) {
+		switch (dir) {
+			case FORWARD:
+				MoveWithEncoders(-distance, -distance, distance, distance);
+				break;
+ 			case LEFT:
+				MoveWithEncoders(distance, -distance, -distance, distance);
+				break;
+            case RIGHT:
+				MoveWithEncoders(-distance, distance, distance, -distance);
+				break;
+ 			case BACKWARD:
+				MoveWithEncoders(distance, distance, -distance, -distance);
+				break;
+			case FRONT_LEFT:
+				MoveWithEncoders(distance, 0, -distance, 0);
+				break;
+  			case FRONT_RIGHT:
+				MoveWithEncoders(0, distance, 0, -distance);
+				break;
+  			case BACK_LEFT:
+				MoveWithEncoders(0, -distance, 0, distance);
+				break;
+ 			case BACK_RIGHT:
+				MoveWithEncoders(-distance, 0, distance, 0);
+				break;
+		}
 	}
 
 
@@ -265,11 +192,11 @@ public class DriveMotors {
 
 	public boolean isDone() {
 		switch (this.state) {
-			case ODOMETRY:
-				return odometryTimer.milliseconds() > 750 && 
-					(Math.abs(forwardPidController.lastError) < 20) && // max vertical error - MM
-					(Math.abs(strafePidController.lastError) < 20) && // max horizontal error - MM
-					(Math.abs(imuPidController.lastError) < .03); // max angle error - radians
+			case ENCODERS:
+				return !backLeft.isBusy() && 
+					!frontLeft.isBusy() && 
+					!frontRight.isBusy() && 
+					!backRight.isBusy(); 
 			
 			case DISTANCE:
 				return (Math.abs(distanceSensorPidController.lastError) < 5);

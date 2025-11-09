@@ -8,8 +8,8 @@ import org.firstinspires.ftc.teamcode.BotConfig;
 import org.firstinspires.ftc.teamcode.Auto;
 
 
-@Autonomous(name = "Name Here"/*, preselectTeleOp="Field Centric (main)"*/)
-@Disabled
+@Autonomous(name = "Name Here"/*, preselectTeleOp="Your Drive Code Here"*/)
+//@Disabled
 public class AutoTemplate extends Auto {
 
 	public Action[] getActions() {
@@ -17,15 +17,12 @@ public class AutoTemplate extends Auto {
 			// ======================= AUTO START ======================= //
 
 			// Actions Here:
-			// Move forward
-			new Move(this, 0, 100, 0),
+			// Move backward
+			new Move(this, 0, -100, 0),
 
-			// Wave arm
-			new MoveArm(this, 500, true),
-			new MoveArm(this, 50, true),
-
-			// Move back to 0, 0
-			new Move(this, 0, 0, 0),
+			// Prepare to launch
+			new OpenStopper(this),
+			new 
 			
 			// ======================== AUTO END ======================== //
 		};
@@ -33,3 +30,4 @@ public class AutoTemplate extends Auto {
 		return actions;
 	}
 }
+
