@@ -30,10 +30,9 @@ public class BotConfig {
   ** SPEED CALIBRATION CONSTANTS
   *****************************************************************************/
   public static final double STRAFE_MULT = 1.41;
-  public static final int MAX_DRIVE_VELOCITY = 2750;
+  public static final int MAX_DRIVE_VELOCITY = 2000;
 
   public static final int INTAKE_VELOCITY = 4500;
-  public static final int PUSHER_VELOCITY = 200;
   public static final int LAUNCHER_VELOCITY = 2000;
   // ---------------------------------------------------------------------------
 
@@ -49,8 +48,8 @@ public class BotConfig {
   /*****************************************************************************
   ** INTAKE CONSTANTS
   *****************************************************************************/
-  public static final double STOPPER_OPEN_POS = 0;
-  public static final double STOPPER_CLOSE_POS = 0.125;
+  public static final double BANANA_OPEN_POS = 0.3;
+  public static final double BANANA_CLOSE_POS = 0.6;
   // ---------------------------------------------------------------------------
 
 
